@@ -101,9 +101,14 @@ def render_plot():
                         int(config["HIST_SCALE_Y"])),
                dpi=int(config["HIST_DPI"]))
     
-    df.sum().sort_values(ascending=False).plot.bar()
+    df = df.sum().sort_values(ascending=False)
     
-    plt.xticks(range(len(char_freq)), list(char_freq.keys()))
+    df.plot.bar()
+    
+    plt.xticks(range(len(char_freq)), list(df.keys()))
+
+    if DEBUG >= 1:
+        print(df)
     
     if config["HIST_MODE"] == "save":
         plt.savefig(config["FILE_HIST"], dpi=int(config["HIST_DPI"]))
