@@ -4,9 +4,13 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from dotenv import dotenv_values
 
+from morse import Char_to_Morse
+
 config = dotenv_values(".env")
 DEBUG=int(config["DEBUG_LEVEL"])
-ignore = ['\n', ' ', '°', '№'] # TODO move to file
+ignore = ['\n'] # TODO move to file
+if config["IGNORE_SPACES"]=="True":
+    ignore.append(' ')
 char_total = 0
 char_freq = {}
 
@@ -27,28 +31,35 @@ def process_input():
         cur_seq = ""
 
         while True:
-            char = file.read(1)
-            if filter(char):
-                if DEBUG >= 2:
-                    print(f"Skipping character: {char}")
+            while cur_seq_length < int(config["SEQ_LENGTH"]):
+                char = file.read(1)
+                if filter(char):
+                    if DEBUG >= 2:
+                        print(f"Skipping character: {char}")
+
+                    continue
+                if not char:
+                    if len(cur_seq) > 0:
+                        print(f"WARN: stopping with remaining buffer: '{cur_seq}'")
+                    return
                 
-                continue
-            if not char:
-                break
+                if DEBUG >= 3:
+                    print(f"Analyzing character: {char}")
+
+                if config["ENABLE_MORSE"] == "True":
+                    char = Char_to_Morse(char) + ' '
+
+                cur_seq = cur_seq + char
+                cur_seq_length = cur_seq_length + len(char)
+
+            selected_length = int(config["SEQ_LENGTH"])
             
             if DEBUG >= 3:
-                print(f"Analyzing character: {char}")
-
-            cur_seq = cur_seq + char
-            cur_seq_length = cur_seq_length + 1
-
-            if cur_seq_length >= int(config["SEQ_LENGTH"]):
-                if DEBUG >= 3:
-                    print(f"Analyzing sequence: {cur_seq}")
-                count_sequence(str(cur_seq)) # must be converted to str explicitly
-                cur_seq = ""
-                cur_seq_length = 0
-    pass
+                print(f"Analyzing sequence: {cur_seq[:(selected_length)]}")            
+            
+            count_sequence(str(cur_seq[:(selected_length)])) # must be converted to str explicitly
+            cur_seq = cur_seq[(selected_length):]
+            cur_seq_length = cur_seq_length - int(config["SEQ_LENGTH"])
 
 
 def filter(input) -> bool:
